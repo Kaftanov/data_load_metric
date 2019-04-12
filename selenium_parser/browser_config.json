@@ -1,0 +1,18 @@
+{
+  "browser": {
+    "chrome": {
+      "path": "drivers/chromedriver_win32.exe",
+      "download_path": "downloads",
+      "pref": {
+        "download.default_directory": "downloads",
+        "download.prompt_for_download": false,
+        "download.directory_upgrade": true,
+        "plugins.always_open_pdf_externally": true,
+        "profile.default_content_setting_values.notifications": 2
+      }
+    },
+    "phantomJs": {
+      "path": "/drivers/phantomjs-2.1.1-windows/bin/phantomjs.exe"
+    }
+  }
+}
