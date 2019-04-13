@@ -1,46 +1,32 @@
 import logging
-import requests
-from time import sleep
-from tqdm import tqdm
-import json
-from random import random, uniform
+from loader import load_data
+from merger import convert, create_frame
+from cleaner import default_cleanup
+import os
+from datetime import datetime
 
+
+CLEAN_FRAME_PATH = 'clean_frames_archive'
+DEFAULT_SUFFIX = '_cleaned'
 
 logging.basicConfig(format='%(levelname)-8s [%(asctime)s] %(message)s', level=logging.DEBUG, filename='logs\\main.log')
 
-url = "https://api.cian.ru/search-offers/v2/search-offers-desktop/"
 
-payload = '{\"jsonQuery\":{\"region\":{\"type\":\"terms\",\"value\":[1]},\"_type\":\"flatrent\",\"engine_version\":{' \
-          '\"type\":\"term\",\"value\":2},\"for_day\":{\"type\":\"term\",\"value\":\"!1\"},\"page\":{' \
-          '\"type\":\"term\",\"value\":%s}}} '
+if __name__ == '__main__':
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+    if not os.path.exists('downloads'):
+        os.makedirs('downloads')
 
-room_filter_payload = "{\"jsonQuery\":{\"_type\":\"flatrent\",\"room\":{\"type\":\"terms\",\"value\":[1,2,3]}," \
-                      "\"for_day\":{\"type\":\"term\",\"value\":\"!1\"},\"region\":{\"type\":\"terms\",\"value\":[" \
-                      "1]},\"engine_version\":{\"type\":\"term\",\"value\":2},\"page\":{\"type\":\"term\"," \
-                      "\"value\":%s}}}"
+    logging.info("__INIT__ Process")
+    print('__INIT__ Process')
+    load_data(type_=2)
+    convert()
+    frame = create_frame()
+    frame = default_cleanup(frame)
 
-headers = {
-    'Content-Type': "text/plain;charset=UTF-8",
-    'DNT': "1",
-    'Origin': "https://www.cian.ru",
-    'Referer': "https://www.cian.ru/snyat-kvartiru/",
-    'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36",
-    'cache-control': "no-cache"
-    }
+    if not os.path.exists(CLEAN_FRAME_PATH):
+        os.makedirs(CLEAN_FRAME_PATH)
 
-for page in tqdm(range(407, 2000)):
-    try:
-        response = json.loads(requests.request("POST", url, data=room_filter_payload % page, headers=headers).content)
-        if response['status'] == 'ok':
-            with open(f"downloads\\data_page_{page}.json", "w") as fd:
-                fd.write(json.dumps(response, indent=4))
-        else:
-            logging.critical("Error from server")
-            logging.critical(response['status'])
-        logging.info(f"Page number {page} completed")
-        sleep(uniform(5, 10))
-    except Exception as error:
-        logging.critical(str(error))
-        print(f"\n\nPage number {page} failed")
-        break
-
+    frame.to_csv(f"{CLEAN_FRAME_PATH}\\fats_df_{datetime.today().strftime('%m%d%Y')}{DEFAULT_SUFFIX}.csv", encoding='utf-8',
+                 index=False)

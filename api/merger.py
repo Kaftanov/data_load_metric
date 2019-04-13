@@ -5,17 +5,22 @@ from tqdm import tqdm
 from datetime import datetime
 import logging
 
-from cleaner import default_cleanup
-
 # COMMON DEFINES
 DEFAULT_DIR_NAME = "downloads"
 PROCESSED_FILES_DIR_NAME = "processed_jsons"
 
+SOURCE_FRAME_PATH = 'source_frames_archive'
+
 DEFAULT_PREFIX = 'flats_df_'
-DEFAULT_SUFFIX = '_cleaned'
+
 
 logging.basicConfig(format='%(levelname)-8s [%(asctime)s] %(message)s', level=logging.DEBUG,
                     filename='logs\\merger.log')
+
+if not os.path.exists(PROCESSED_FILES_DIR_NAME):
+    os.makedirs(PROCESSED_FILES_DIR_NAME)
+if not os.path.exists(SOURCE_FRAME_PATH):
+    os.makedirs(SOURCE_FRAME_PATH)
 
 
 def convert():
@@ -38,16 +43,6 @@ def create_frame():
         temp_df = pd.read_json(os.path.join(PROCESSED_FILES_DIR_NAME, json_file))
         logging.info(f"{json_file} -- {temp_df.shape}")
         frame = frame.append(temp_df, sort=True)
-    frame.to_csv(f"{DEFAULT_PREFIX}{datetime.today().strftime('%m%d%Y')}.csv", encoding="utf-8", index=False)
+    frame.to_csv(f"{SOURCE_FRAME_PATH}{DEFAULT_PREFIX}{datetime.today().strftime('%m%d%Y')}.csv",
+                 encoding="utf-8", index=False)
     return frame
-
-
-if __name__ == '__main__':
-
-    if not os.path.exists(PROCESSED_FILES_DIR_NAME):
-        os.makedirs(PROCESSED_FILES_DIR_NAME)
-    convert()
-    frame = create_frame()
-    frame = default_cleanup(frame)
-    frame.to_csv(f"{DEFAULT_PREFIX}{datetime.today().strftime('%m%d%Y')}{DEFAULT_SUFFIX}.csv", encoding='utf-8',
-                 index=False)
