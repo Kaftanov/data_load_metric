@@ -6,7 +6,7 @@ import json
 from random import random, uniform
 
 
-logging.basicConfig(format='%(levelname)-8s [%(asctime)s] %(message)s', level=logging.DEBUG, filename='mylog.log')
+logging.basicConfig(format='%(levelname)-8s [%(asctime)s] %(message)s', level=logging.DEBUG, filename='logs\\main.log')
 
 url = "https://api.cian.ru/search-offers/v2/search-offers-desktop/"
 
@@ -28,7 +28,7 @@ headers = {
     'cache-control': "no-cache"
     }
 
-for page in tqdm(range(350, 2000)):
+for page in tqdm(range(407, 2000)):
     try:
         response = json.loads(requests.request("POST", url, data=room_filter_payload % page, headers=headers).content)
         if response['status'] == 'ok':
