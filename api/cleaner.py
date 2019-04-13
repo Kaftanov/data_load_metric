@@ -2,14 +2,21 @@ import pandas as pd
 import ast
 from pandas.io.json import json_normalize
 from datetime import datetime
+import json
 
 
 def extract_key(json_string, key):
-    return eval(json_string)[key]
+    if type(json_string) == dict:
+        return json_string[key]
+    else:
+        return eval(json_string)[key]
 
 
 def flatten_json(d):
-    return ast.literal_eval(d)
+    if type(d) == dict:
+        return d
+    else:
+        return ast.literal_eval(d)
 
 
 def flatten_list_of_dicts(ld):
@@ -45,10 +52,16 @@ def default_cleanup(frame):
                       'id', 'newbuildingVasPromotion', 'notes'], inplace=True, axis=1)
     local_frame['allRoomsArea'].fillna('0', inplace=True)
     local_frame['balconiesCount'] = local_frame['balconiesCount'].fillna(0).astype(int)
+
+    local_frame['bargainTerms'].fillna('{"price": None, "currency": None, "deposit": None}', inplace=True)
+
     local_frame['flatPrice'] = local_frame['bargainTerms'].apply(extract_key, key='price')
     local_frame['flatPriceCurrency'] = local_frame['bargainTerms'].apply(extract_key, key='currency')
     local_frame['flatPriceDeposit'] = local_frame['bargainTerms'].apply(extract_key, key='deposit')
     local_frame.drop('bargainTerms', inplace=True, axis=1)
+
+    local_frame['building'].fillna('{"buildYear": None, "materialType": None, "floorsCount": None, '
+                                   '"passengerLiftsCount": None, "cargoLiftsCount": None}', inplace=True)
 
     local_frame['buildYear'] = local_frame['building'].apply(extract_key, key='buildYear')
     local_frame['buildMaterialType'] = local_frame['building'].apply(extract_key, key='materialType')
