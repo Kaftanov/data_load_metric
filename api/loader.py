@@ -9,14 +9,20 @@ logging.basicConfig(format='%(levelname)-8s [%(asctime)s] %(message)s', level=lo
                     filename='logs\\loader.log')
 
 
-def load_data(type_=2):
-    url = "https://api.cian.ru/search-offers/v2/search-offers-desktop/"
+def load_data(protocol="https", proxy=None, type_=2, start_=1, end_=10000):
+    url = f"{protocol}://api.cian.ru/search-offers/v2/search-offers-desktop/"
 
     if type_ == 1:
         payload = '{\"jsonQuery\":{\"region\":{\"type\":\"terms\",\"value\":[1]},\"_type\":\"flatrent\",' \
                   '\"engine_version\":{' \
                   '\"type\":\"term\",\"value\":2},\"for_day\":{\"type\":\"term\",\"value\":\"!1\"},\"page\":{' \
                   '\"type\":\"term\",\"value\":%s}}} '
+    elif type_ == 2:
+        payload = "{\"jsonQuery\":{\"_type\":\"flatrent\",\"for_day\":{\"type\":\"term\",\"value\":\"!1\"}," \
+                  "\"price\":{\"type\":\"range\",\"value\":{\"lte\":10000000}},\"engine_version\":{\"type\":\"term\"," \
+                  "\"value\":2},\"geo\":{\"type\":\"geo\",\"value\":[{\"type\":\"district\",\"id\":10}," \
+                  "{\"type\":\"district\",\"id\":9},{\"type\":\"district\",\"id\":5}]},\"region\":{" \
+                  "\"type\":\"terms\",\"value\":[1]},\"page\":{\"type\":\"term\",\"value\":%s}}}"
     else:
         payload = "{\"jsonQuery\":{\"_type\":\"flatrent\",\"room\":{\"type\":\"terms\",\"value\":[1,2,3]}," \
                   "\"for_day\":{\"type\":\"term\",\"value\":\"!1\"},\"region\":{\"type\":\"terms\",\"value\":[" \
@@ -33,10 +39,14 @@ def load_data(type_=2):
         'cache-control': "no-cache"
     }
 
-    for page in tqdm(range(407, 2000)):
+    for page in range(start_, end_):
         try:
-            response = json.loads(
-                requests.request("POST", url, data=payload % page, headers=headers).content)
+            if proxy:
+                response = json.loads(
+                    requests.request("POST", url, data=payload % page, headers=headers, proxies=proxy).content)
+            else:
+                response = json.loads(
+                    requests.request("POST", url, data=payload % page, headers=headers).content)
             if response['status'] == 'ok':
                 with open(f"downloads\\data_page_{page}.json", "w") as fd:
                     fd.write(json.dumps(response, indent=4))
@@ -48,4 +58,4 @@ def load_data(type_=2):
         except Exception as error:
             logging.critical(str(error))
             print(f"\n\nPage number {page} failed")
-            break
+            return page

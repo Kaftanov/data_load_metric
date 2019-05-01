@@ -7,6 +7,8 @@ from time import sleep
 from fake_useragent import UserAgent
 import os
 from tqdm import tqdm
+import pandas as pd
+from random import uniform
 
 
 def parse_card(house_card, type_):
@@ -90,6 +92,8 @@ def parse_page(page_content, page_number):
             logging.critical(error)
             with open(os.path.join('broken_files', str(page_number) + 'content.html', "wb")) as fd:
                 fd.write(page_content)
+            return 0
+    return 1
 
 
 def get_first_page():
@@ -98,21 +102,36 @@ def get_first_page():
     parse_page(response.content, 0)
 
 
+def get_proxy(file_path):
+    data = pd.read_csv(file_path)
+    for proxy in data.iterrows():
+        yield {"http": f"{proxy[1]['address']}:{proxy[1]['port']}"}
+
+
+def load_data(start_=1, end_=10000, proxy=None):
+    url_temp = 'http://www.cian.ru/cat.php?deal_type=rent&district%5B0%5D=5&district%5B1%5D=9&district%5B2%5D=10&engine_version=2&offer_type=flat&p={}&region=1&room1=1&room2=1&room3=1&type=4'
+    for page_number in range(start_, end_):
+        if proxy:
+            response = requests.get(url_temp.format(page_number), proxy=proxy)
+        else:
+            response = requests.get(url_temp.format(page_number))
+        status_ = parse_page(page_content=response.content, page_number=page_number)
+        if status_ == 0:
+            return page_number
+        sleep(uniform(5, 10))
+
+
 def run():
     # have a problem with first page
     # getting manually
-    url_temp = 'https://www.cian.ru/cat.php?deal_type=rent&engine_version=2&offer_type=flat&p={}&region=1&type=4'
+    url_temp = 'http://www.cian.ru/cat.php?deal_type=rent&district%5B0%5D=5&district%5B1%5D=9&district%5B2%5D=10&engine_version=2&offer_type=flat&p={}&region=1&room1=1&room2=1&room3=1&type=4'
     with open("data.csv", "w", encoding="utf-8") as fd:
         writer = csv.writer(fd, delimiter='\t', lineterminator='\n')
         writer.writerow(ShortAdd.get_str_attributes())
     get_first_page()
-    ua = UserAgent()
-    session = requests.Session()
-    session.headers.update({'User-Agent': ua.random})
-    for page_index in tqdm(range(2, 10000)):
-        response = session.get(url_temp.format(page_index))
-        parse_page(page_content=response.content, page_number=page_index)
-        sleep(5)
+    page_number = 2
+    for proxy in tqdm(get_proxy("proxy.csv")):
+        page_number = load_data(start_=page_number, proxy=proxy)
 
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@ import os
 from tqdm import tqdm
 from datetime import datetime
 import logging
+from cleaner import delete_files
 
 
 if not os.path.exists('logs'):
@@ -24,6 +25,9 @@ def convert(input_path='downloads', output_path='processed_jsons'):
         raise Exception("Missing <json_files_path> folder")
     if not os.path.exists(output_path):
         os.makedirs(output_path)
+    else:
+        if len(os.listdir(output_path)) > 1:
+            delete_files(output_path)
     for json_file in tqdm(os.listdir(input_path)):
         with open(os.path.join(input_path, json_file), "r") as fd:
             data = json.load(fd)
@@ -52,6 +56,6 @@ def create_frame(input_path='processed_jsons', output_path='source_frames_archiv
         temp_df = pd.read_json(os.path.join(input_path, json_file))
         logging.info(f"{json_file} -- {temp_df.shape}")
         frame = frame.append(temp_df, sort=True)
-    frame.to_csv(f"{output_path}\\{file_prefix}{datetime.today().strftime('%m%d%Y')}.csv",
+    frame.to_csv(f"{output_path}\\{file_prefix}{datetime.today().strftime('%m%d%Y_%H%M%S')}.csv",
                  encoding="utf-8", index=False)
     return frame

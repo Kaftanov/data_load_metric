@@ -1,8 +1,7 @@
 import pandas as pd
 import ast
 from pandas.io.json import json_normalize
-from datetime import datetime
-import json
+import os
 
 
 def extract_key(json_string, key):
@@ -49,8 +48,11 @@ def default_cleanup(frame):
                       'descriptionMinhash', 'descriptionWordsHighlighted', 'forDay', 'gaLabel', 'gaObjectType',
                       'jkUrl', 'modelVersion', 'objectGuid', 'platform', 'publishedUserId', 'specialty', 'userId',
                       'videos', 'photos', 'windowsViewType', 'withoutClientFee', 'adfoxParams', 'humanizedTimedelta',
-                      'id', 'newbuildingVasPromotion', 'notes'], inplace=True, axis=1)
-    local_frame['allRoomsArea'].fillna('0', inplace=True)
+                      'id', 'newbuildingVasPromotion', 'notes'], inplace=True, axis=1, errors="ignore")
+    try:
+        local_frame['allRoomsArea'].fillna('0', inplace=True)
+    except KeyError:
+        local_frame['totalArea'].fillna('0', inplace=True)
     local_frame['balconiesCount'] = local_frame['balconiesCount'].fillna(0).astype(int)
 
     local_frame['bargainTerms'].fillna('{"price": None, "currency": None, "deposit": None}', inplace=True)
@@ -85,3 +87,8 @@ def default_cleanup(frame):
     local_frame['creationDate'] = pd.to_datetime(local_frame['creationDate'])
     local_frame.drop(['phones', 'user'], inplace=True, axis=1)
     return local_frame
+
+
+def delete_files(folder_path):
+    for file in os.listdir(folder_path):
+        os.remove(os.path.join(folder_path, file))
